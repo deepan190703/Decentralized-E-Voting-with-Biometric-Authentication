@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Voters List - Voter Registration System{% endblock %}
+
+{% block content %}
+<h1>👥 Registered Voters</h1>
+{% if voters %}
+<table class="voters-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Registration Date</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for voter in voters %}
+        <tr>
+            <td>{{ voter[0] }}</td>
+            <td>{{ voter[1] }}</td>
+            <td>{{ voter[2] }}</td>
+            <td>{{ voter[3] }}</td>
+            <td>
+                <a href="{{ url_for('voting_card', voter_id=voter[0]) }}" style="color: #667eea; text-decoration: none;">
+                    📄 Download Card
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p style="text-align: center; color: #666; margin: 2rem 0;">No voters registered yet.</p>
+{% endif %}
+
+<div class="nav-links">
+    <a href="{{ url_for('index') }}">← Back to Home</a>
+    <a href="{{ url_for('register') }}">📝 Register New Voter</a>
+</div>
+{% endblock %}

@@ -1,0 +1,101 @@
+<!-- <!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h2>Admin Dashboard</h2>
+    <form method="POST" action="/distribute">
+        <button type="submit">🚀 Distribute Coins</button>
+    </form>
+    <br>
+    <a href="/add_candidate"><button>Add Candidate</button></a>
+    <a href="/view_candidates"><button>View Candidates</button></a>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Voting System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            background-color: crimson;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            font-size: 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .logout-btn:hover {
+            background-color: #b30000;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>📊 Admin Dashboard</h1>
+        <p style="font-size: 1.2rem; color: rgba(255, 255, 255, 0.9); font-weight: 300; margin-bottom: 40px;">Manage
+            your voting system</p>
+
+        <!-- 🔓 Logout Button -->
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+
+        <div class="dashboard-actions">
+            <div class="action-card">
+                <span class="icon">🚀</span>
+                <h3>Distribute Coins</h3>
+                <p style="color: #666; margin-bottom: 20px;">Launch coin distribution to voters</p>
+                <form method="POST" action="/distribute">
+                    <button type="submit">Launch Distribution</button>
+                </form>
+            </div>
+
+            <div class="action-card">
+                <span class="icon">➕</span>
+                <h3>Add Candidate</h3>
+                <p style="color: #666; margin-bottom: 20px;">Register new candidates</p>
+                <a href="/add_candidate"><button>Add New Candidate</button></a>
+            </div>
+
+            <div class="action-card">
+                <span class="icon">📋</span>
+                <h3>View Candidates</h3>
+                <p style="color: #666; margin-bottom: 20px;">View all registered candidates</p>
+                <a href="/view_candidates"><button>View All Candidates</button></a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('logoutBtn').addEventListener('click', function () {
+            fetch('/logout', {
+                method: 'POST',
+                credentials: 'include'
+            }).then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                } else {
+                    window.location.href = '/login';
+                }
+            }).catch(error => {
+                console.error('Logout failed:', error);
+            });
+        });
+    </script>
+</body>
+
+</html>

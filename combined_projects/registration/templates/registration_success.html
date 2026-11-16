@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Success</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        .success-icon {
+            font-size: 60px;
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+        .download-btn {
+            background: #007bff;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+            margin: 20px 10px;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        .download-btn:hover {
+            background: #0056b3;
+        }
+        .home-btn {
+            background: #6c757d;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+            margin: 20px 10px;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        .home-btn:hover {
+            background: #545b62;
+        }
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+        .flash-success {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 5px;
+            border: 1px solid #c3e6cb;
+            margin-bottom: 10px;
+        }
+        .flash-warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 12px;
+            border-radius: 5px;
+            border: 1px solid #ffeaa7;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-icon">✅</div>
+        <h1>Registration Successful!</h1>
+        
+        <!-- Flash messages -->
+        <div class="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+        
+        <p>Congratulations <strong>{{ voter_name }}</strong>!</p>
+        <p>Your voter registration has been completed successfully. Your voting card is ready for download.</p>
+        
+        <div style="margin: 30px 0;">
+            <a href="{{ url_for('voting_card', voter_id=voter_id) }}" class="download-btn">
+                📄 Download Voting Card (PDF)
+            </a>
+        </div>
+        
+        <p style="color: #666; font-size: 14px; margin: 20px 0;">
+            <strong>Important:</strong> Please save your voting card PDF file. You will need it for voting authentication.
+        </p>
+        
+        <div>
+            <a href="{{ url_for('index') }}" class="home-btn">🏠 Back to Home</a>
+            <a href="{{ url_for('list_voters') }}" class="home-btn">👥 View All Voters</a>
+        </div>
+    </div>
+</body>
+</html>

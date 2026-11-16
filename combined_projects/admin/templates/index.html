@@ -1,0 +1,90 @@
+<!-- <!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Login</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+<body>
+  <h2>Enter 3 passwords to access Admin Dashboard</h2>
+  <form method="POST">
+    <input name="p1" type="password" placeholder="Password 1"><br>
+    <input name="p2" type="password" placeholder="Password 2"><br>
+    <input name="p3" type="password" placeholder="Password 3"><br><br>
+    <button type="submit">Login</button>
+  </form>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Voting System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>🗳️ Voting System</h1>
+        <p style="font-size: 1.2rem; color: rgba(255, 255, 255, 0.9); font-weight: 300; margin-bottom: 40px;">Secure Digital Democracy</p>
+        
+        <form method="POST">
+            <h2>Admin Access</h2>
+            <div class="form-group">
+                <label for="p1">Security Key 1</label>
+                <input name="p1" type="password" placeholder="Enter first password" required>
+            </div>
+            <div class="form-group">
+                <label for="p2">Security Key 2</label>
+                <input name="p2" type="password" placeholder="Enter second password" required>
+            </div>
+            <div class="form-group">
+                <label for="p3">Security Key 3</label>
+                <input name="p3" type="password" placeholder="Enter third password" required>
+            </div>
+            <button type="submit">🔐 Access Dashboard</button>
+        </form>
+    </div>
+
+    <script>
+        // Add interactive enhancements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add ripple effect to buttons
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    const ripple = document.createElement('span');
+                    const rect = this.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height);
+                    const x = e.clientX - rect.left - size / 2;
+                    const y = e.clientY - rect.top - size / 2;
+                    
+                    ripple.style.width = ripple.style.height = size + 'px';
+                    ripple.style.left = x + 'px';
+                    ripple.style.top = y + 'px';
+                    ripple.classList.add('ripple');
+                    
+                    this.appendChild(ripple);
+                    
+                    setTimeout(() => {
+                        ripple.remove();
+                    }, 600);
+                });
+            });
+
+            // Form validation feedback
+            const inputs = document.querySelectorAll('input[required]');
+            inputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    if (this.value.trim() === '') {
+                        this.style.borderColor = '#e53e3e';
+                    } else {
+                        this.style.borderColor = '#48bb78';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

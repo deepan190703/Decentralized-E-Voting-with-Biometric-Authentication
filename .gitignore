@@ -1,0 +1,40 @@
+# Ignore Python cache and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore virtual environment folders
+venv/
+env/
+ENV/
+myvenv/
+chvenv/
+
+# Ignore IDE/editor config
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore log and pid files
+*.log
+*.pid
+nohup.out
+
+# Ignore config files
+config.json
+config1.json
+config2.json
+config3.json
+wallet.json
+last_transaction.json
+# Flask-related optional files
+instance/
+*.db
+*.sqlite3
+
+# Ignore OS-specific files
+.DS_Store
+voters.db
+candidates.db

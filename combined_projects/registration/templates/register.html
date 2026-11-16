@@ -1,0 +1,580 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Voter Registration System{% endblock %}
+
+{% block content %}
+<h1>📝 Voter Registration</h1>
+<p style="color: #666; margin-bottom: 2rem;">Complete your voter registration to generate secure cryptographic keys and voting card</p>
+
+<form method="POST" enctype="multipart/form-data" id="registrationForm">
+    <div class="form-group">
+        <label for="name">Full Name:</label>
+        <input type="text" id="name" name="name" required placeholder="Enter your full name" maxlength="100">
+        <small class="form-help">Enter your legal name as it appears on official documents</small>
+    </div>
+    
+    <div class="form-group">
+        <label for="phone">Phone Number:</label>
+        <input type="tel" id="phone" name="phone" required placeholder="Enter your phone number" pattern="[0-9+\-\s\(\)]+">
+        <small class="form-help">This will be your unique identifier for login</small>
+    </div>
+    
+    <div class="form-group">
+        <label for="dob">Date of Birth:</label>
+        <input type="date" id="dob" name="dob" required max="">
+        <small class="form-help">Must be 18 years or older to register</small>
+    </div>
+    
+    <div class="form-group">
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required placeholder="Choose a strong password" minlength="6">
+        <div class="password-strength" id="passwordStrength"></div>
+        <small class="form-help">Minimum 6 characters. Used for secure login and key encryption.</small>
+    </div>
+    
+    <div class="form-group">
+        <label>Photo Capture (Required):</label>
+        <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+            📸 Your photo will be processed to passport-style dimensions (300x400px) and included in your voting card.
+        </p>
+        
+        <div style="margin-bottom: 1rem;">
+            <button type="button" id="useWebcam" class="btn method-btn" style="width: 48%; margin-right: 2%;">📷 Use Webcam</button>
+            <button type="button" id="useUpload" class="btn btn-secondary method-btn" style="width: 48%;">📁 Upload File</button>
+        </div>
+        
+        <!-- Webcam Section -->
+        <div id="webcamSection" style="display: none;">
+            <div class="webcam-container">
+                <video id="video" autoplay playsinline style="width: 100%; max-width: 400px; border-radius: 8px; border: 2px solid #ddd; display: none;"></video>
+                <canvas id="canvas" style="display: none;"></canvas>
+                
+                <div class="webcam-controls" style="margin-top: 1rem; text-align: center;">
+                    <button type="button" id="startCamera" class="btn" style="width: auto; margin: 0.5rem;">📷 Start Camera</button>
+                    <button type="button" id="capturePhoto" class="btn btn-success" style="width: auto; margin: 0.5rem; display: none;">📸 Capture Photo</button>
+                    <button type="button" id="retakePhoto" class="btn btn-secondary" style="width: auto; margin: 0.5rem; display: none;">🔄 Retake</button>
+                </div>
+                
+                <div id="photoPreview" style="margin-top: 1rem; text-align: center; display: none;">
+                    <div style="display: inline-block; border: 2px solid #667eea; border-radius: 8px; padding: 4px; background: white;">
+                        <img id="capturedImage" style="max-width: 200px; border-radius: 4px; display: block;">
+                    </div>
+                    <p style="color: #667eea; margin-top: 0.5rem; font-weight: bold;">✅ Photo captured successfully!</p>
+                    <small style="color: #666;">Image will be automatically cropped to passport-style dimensions</small>
+                </div>
+                
+                <div id="cameraStatus" style="margin-top: 1rem; text-align: center; color: #666; padding: 1rem; background: #f8f9ff; border-radius: 6px;">
+                    📷 Click "Start Camera" to begin photo capture
+                </div>
+            </div>
+        </div>
+        
+        <!-- File Upload Section -->
+        <div id="uploadSection" style="display: none;">
+            <div class="file-input-wrapper">
+                <input type="file" id="photo" name="photo" accept="image/png,image/jpg,image/jpeg,image/gif">
+                <label for="photo" class="file-input-label">
+                    📷 Click to upload your photo
+                    <br><small>Supported: PNG, JPG, JPEG, GIF | Max size: 16MB</small>
+                    <br><small style="color: #666;">Will be automatically processed to passport-style dimensions</small>
+                </label>
+            </div>
+            <div id="uploadPreview" style="margin-top: 1rem; text-align: center; display: none;">
+                <div style="display: inline-block; border: 2px solid #667eea; border-radius: 8px; padding: 4px; background: white;">
+                    <img id="uploadedImage" style="max-width: 200px; border-radius: 4px; display: block;">
+                </div>
+                <p style="color: #667eea; margin-top: 0.5rem; font-weight: bold;">✅ Photo uploaded successfully!</p>
+            </div>
+        </div>
+        
+        <input type="hidden" id="photo_data" name="photo_data">
+    </div>
+    
+    <!-- Fingerprint Enrollment Section -->
+    <div class="form-group fingerprint-section">
+        <label>
+            <input type="checkbox" id="enroll_fingerprint" name="enroll_fingerprint" style="margin-right: 0.5rem;">
+            Enroll Fingerprint for Quick Authentication
+        </label>
+        <div id="fingerprintInfo" style="display: none; margin-top: 1rem; padding: 1rem; background: #e8f4fd; border-radius: 6px; border-left: 4px solid #667eea;">
+            <p style="margin: 0; color: #333;">
+                🔐 <strong>Fingerprint Enrollment:</strong> This will allow you to authenticate quickly during voting using your fingerprint scanner.
+            </p>
+            <small style="color: #666;">
+                • Requires Arduino fingerprint sensor connected to COM3<br>
+                • Follow on-screen instructions during enrollment<br>
+                • Optional but recommended for enhanced security
+            </small>
+        </div>
+        <div id="fingerprintStatus" style="display: none; margin-top: 1rem; padding: 1rem; border-radius: 6px;">
+            <!-- Status will be populated by JavaScript -->
+        </div>
+    </div>
+    
+    <div class="security-info" style="background: #f8f9ff; padding: 1.5rem; border-radius: 8px; border: 1px solid #e0e8ff; margin: 1.5rem 0;">
+        <h3 style="margin-top: 0; color: #667eea;">🔐 Security Features</h3>
+        <ul style="margin: 0; padding-left: 1.5rem;">
+            <li><strong>ECDSA Key Pair:</strong> Cryptographic keys generated using SECP256k1 curve</li>
+            <li><strong>Data Encryption:</strong> Private key encrypted using Fernet symmetric encryption</li>
+            <li><strong>Secure Hashing:</strong> Password hashed using Werkzeug's secure methods</li>
+            <li><strong>QR Code:</strong> Public key embedded in QR code for easy verification</li>
+            <li><strong>PDF Voting Card:</strong> Generated with your photo, details, and QR code</li>
+        </ul>
+    </div>
+    
+    <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+        🔐 Register & Generate Voting Card
+    </button>
+    <div id="submitStatus" style="margin-top: 1rem; text-align: center; display: none;">
+        <div class="loading-spinner"></div>
+        <p>Processing registration... Please wait</p>
+    </div>
+</form>
+
+<div class="nav-links">
+    <a href="{{ url_for('index') }}">← Back to Home</a>
+    <a href="{{ url_for('list_voters') }}">👥 View Registered Voters</a>
+</div>
+
+<script>
+let video, canvas, stream, photoData, currentMethod = null;
+let formValid = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Set max date for DOB to today and min date to 100 years ago
+    const today = new Date();
+    const minDate = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
+    const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate()); // Must be 18+
+    
+    document.getElementById('dob').setAttribute('max', maxDate.toISOString().split('T')[0]);
+    document.getElementById('dob').setAttribute('min', minDate.toISOString().split('T')[0]);
+    
+    // Initialize elements
+    video = document.getElementById('video');
+    canvas = document.getElementById('canvas');
+    
+    const useWebcamBtn = document.getElementById('useWebcam');
+    const useUploadBtn = document.getElementById('useUpload');
+    const webcamSection = document.getElementById('webcamSection');
+    const uploadSection = document.getElementById('uploadSection');
+    const startCameraBtn = document.getElementById('startCamera');
+    const capturePhotoBtn = document.getElementById('capturePhoto');
+    const retakePhotoBtn = document.getElementById('retakePhoto');
+    const cameraStatus = document.getElementById('cameraStatus');
+    const photoPreview = document.getElementById('photoPreview');
+    const uploadPreview = document.getElementById('uploadPreview');
+    const capturedImage = document.getElementById('capturedImage');
+    const uploadedImage = document.getElementById('uploadedImage');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitStatus = document.getElementById('submitStatus');
+    const photoDataInput = document.getElementById('photo_data');
+    const photoFileInput = document.getElementById('photo');
+    const passwordInput = document.getElementById('password');
+    const passwordStrength = document.getElementById('passwordStrength');
+    const fingerprintCheckbox = document.getElementById('enroll_fingerprint');
+    const fingerprintInfo = document.getElementById('fingerprintInfo');
+    const fingerprintStatus = document.getElementById('fingerprintStatus');
+    
+    // Form validation
+    function validateForm() {
+        const name = document.getElementById('name').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const dob = document.getElementById('dob').value;
+        const password = document.getElementById('password').value;
+        const hasPhoto = photoData || photoFileInput.files[0];
+        
+        formValid = name && phone && dob && password.length >= 6 && hasPhoto && currentMethod;
+        submitBtn.disabled = !formValid;
+        
+        if (formValid) {
+            submitBtn.textContent = '🔐 Register & Generate Voting Card';
+            submitBtn.classList.remove('btn');
+            submitBtn.classList.add('btn', 'btn-primary');
+        }
+    }
+    
+    // Password strength indicator
+    passwordInput.addEventListener('input', function() {
+        const password = this.value;
+        let strength = 0;
+        let text = '';
+        let color = '';
+        
+        if (password.length >= 6) strength++;
+        if (/[A-Z]/.test(password)) strength++;
+        if (/[0-9]/.test(password)) strength++;
+        if (/[^A-Za-z0-9]/.test(password)) strength++;
+        
+        switch(strength) {
+            case 0:
+            case 1:
+                text = 'Weak';
+                color = '#dc3545';
+                break;
+            case 2:
+                text = 'Fair';
+                color = '#ffc107';
+                break;
+            case 3:
+                text = 'Good';
+                color = '#17a2b8';
+                break;
+            case 4:
+                text = 'Strong';
+                color = '#28a745';
+                break;
+        }
+        
+        if (password.length > 0) {
+            passwordStrength.innerHTML = `Password strength: <span style="color: ${color}; font-weight: bold;">${text}</span>`;
+            passwordStrength.style.display = 'block';
+        } else {
+            passwordStrength.style.display = 'none';
+        }
+        
+        validateForm();
+    });
+    
+    // Add event listeners for form validation
+    ['name', 'phone', 'dob'].forEach(id => {
+        document.getElementById(id).addEventListener('input', validateForm);
+    });
+    
+    // Fingerprint checkbox handling
+    fingerprintCheckbox.addEventListener('change', function() {
+        fingerprintInfo.style.display = this.checked ? 'block' : 'none';
+    });
+    
+    // Method selection
+    useWebcamBtn.addEventListener('click', function() {
+        currentMethod = 'webcam';
+        webcamSection.style.display = 'block';
+        uploadSection.style.display = 'none';
+        useWebcamBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        useUploadBtn.style.background = '#6c757d';
+        resetForm();
+        validateForm();
+    });
+    
+    useUploadBtn.addEventListener('click', function() {
+        currentMethod = 'upload';
+        webcamSection.style.display = 'none';
+        uploadSection.style.display = 'block';
+        useUploadBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        useWebcamBtn.style.background = '#6c757d';
+        resetForm();
+        validateForm();
+    });
+    
+    // File upload handling
+    photoFileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            // Validate file size (16MB limit)
+            if (file.size > 16 * 1024 * 1024) {
+                alert('File too large! Please upload an image smaller than 16MB.');
+                this.value = '';
+                return;
+            }
+            
+            // Validate file type
+            const allowedTypes = ['image/png', 'image/jpg', 'image/jpeg', 'image/gif'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('Invalid file type! Please upload PNG, JPG, JPEG, or GIF files only.');
+                this.value = '';
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                photoData = e.target.result;
+                photoDataInput.value = photoData;
+                
+                // Show preview
+                uploadedImage.src = photoData;
+                uploadPreview.style.display = 'block';
+                
+                // Update label
+                const label = document.querySelector('.file-input-label');
+                label.innerHTML = `📷 Selected: ${file.name}<br><small>Click to change photo</small>`;
+                label.style.borderColor = '#667eea';
+                label.style.backgroundColor = '#f8f9ff';
+                
+                validateForm();
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    // Webcam handling
+    startCameraBtn.addEventListener('click', startCamera);
+    capturePhotoBtn.addEventListener('click', capturePhoto);
+    retakePhotoBtn.addEventListener('click', retakePhoto);
+    
+    async function startCamera() {
+        try {
+            cameraStatus.innerHTML = '📷 Starting camera... Please allow camera access';
+            cameraStatus.style.color = '#667eea';
+            
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: { ideal: 640 },
+                    height: { ideal: 480 },
+                    facingMode: 'user'
+                }
+            });
+            
+            video.srcObject = stream;
+            video.style.display = 'block';
+            
+            startCameraBtn.style.display = 'none';
+            capturePhotoBtn.style.display = 'inline-block';
+            cameraStatus.innerHTML = '📸 Position yourself in the frame and click capture<br><small>Center your face and ensure good lighting</small>';
+            cameraStatus.style.color = '#28a745';
+            
+        } catch (err) {
+            console.error('Error accessing camera:', err);
+            cameraStatus.innerHTML = '❌ Error accessing camera<br><small>Please allow camera permissions and try again</small>';
+            cameraStatus.style.color = '#dc3545';
+        }
+    }
+    
+    function capturePhoto() {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+        
+        // Convert to base64
+        photoData = canvas.toDataURL('image/jpeg', 0.8);
+        photoDataInput.value = photoData;
+        
+        // Show preview
+        capturedImage.src = photoData;
+        photoPreview.style.display = 'block';
+        
+        // Hide video and show controls
+        video.style.display = 'none';
+        capturePhotoBtn.style.display = 'none';
+        retakePhotoBtn.style.display = 'inline-block';
+        
+        cameraStatus.innerHTML = '✅ Photo captured successfully!<br><small>Image will be processed to passport-style dimensions</small>';
+        cameraStatus.style.color = '#28a745';
+        
+        // Stop camera stream
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+        
+        validateForm();
+    }
+    
+    function retakePhoto() {
+        // Reset everything
+        photoPreview.style.display = 'none';
+        photoDataInput.value = '';
+        photoData = null;
+        
+        retakePhotoBtn.style.display = 'none';
+        startCameraBtn.style.display = 'inline-block';
+        
+        cameraStatus.innerHTML = '📷 Click "Start Camera" to retake photo';
+        cameraStatus.style.color = '#666';
+        
+        validateForm();
+    }
+    
+    function resetForm() {
+        photoPreview.style.display = 'none';
+        uploadPreview.style.display = 'none';
+        photoDataInput.value = '';
+        photoData = null;
+        
+        // Reset webcam
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+        video.style.display = 'none';
+        startCameraBtn.style.display = 'inline-block';
+        capturePhotoBtn.style.display = 'none';
+        retakePhotoBtn.style.display = 'none';
+        cameraStatus.innerHTML = '📷 Click "Start Camera" to begin photo capture';
+        cameraStatus.style.color = '#666';
+        
+        // Reset file upload
+        photoFileInput.value = '';
+        const label = document.querySelector('.file-input-label');
+        if (label) {
+            label.innerHTML = '📷 Click to upload your photo<br><small>Supported: PNG, JPG, JPEG, GIF | Max size: 16MB</small><br><small style="color: #666;">Will be automatically processed to passport-style dimensions</small>';
+            label.style.borderColor = '#ddd';
+            label.style.backgroundColor = '';
+        }
+    }
+    
+    // Form submission
+    document.getElementById('registrationForm').addEventListener('submit', function(e) {
+        if (!formValid) {
+            e.preventDefault();
+            alert('Please complete all required fields before submitting!');
+            return false;
+        }
+        
+        if (!photoData && !photoFileInput.files[0]) {
+            e.preventDefault();
+            alert('Please capture or upload your photo before submitting!');
+            return false;
+        }
+        
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing...';
+        submitStatus.style.display = 'block';
+        
+        if (fingerprintCheckbox.checked) {
+            fingerprintStatus.style.display = 'block';
+            fingerprintStatus.innerHTML = '<div style="color: #667eea; font-weight: bold;">⏳ Fingerprint enrollment will begin after registration...</div>';
+        }
+    });
+    
+    // Initialize form validation
+    validateForm();
+});
+</script>
+
+<style>
+.form-help {
+    display: block;
+    margin-top: 0.25rem;
+    color: #666;
+    font-size: 0.875rem;
+}
+
+.password-strength {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    display: none;
+}
+
+.webcam-container {
+    text-align: center;
+    padding: 1.5rem;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+.webcam-container video {
+    background-color: #000;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+#photoPreview img, #uploadPreview img {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.fingerprint-section {
+    border: 1px solid #e0e8ff;
+    padding: 1rem;
+    border-radius: 8px;
+    background: #fafbff;
+}
+
+.fingerprint-section label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.security-info ul li {
+    margin-bottom: 0.5rem;
+}
+
+.method-btn {
+    transition: all 0.3s ease;
+}
+
+.method-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    font-weight: bold;
+    font-size: 1.1rem;
+    padding: 1rem 2rem;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+}
+
+.loading-spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.nav-links {
+    margin-top: 2rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.nav-links a {
+    padding: 0.5rem 1rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #667eea;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.nav-links a:hover {
+    background: #667eea;
+    color: white;
+    transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+    .method-btn {
+        width: 100% !important;
+        margin: 0.5rem 0 !important;
+    }
+    
+    .security-info {
+        padding: 1rem;
+    }
+    
+    .nav-links {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}

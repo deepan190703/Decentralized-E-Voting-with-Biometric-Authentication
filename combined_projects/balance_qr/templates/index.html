@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Wallet Scanner</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+      max-width: 600px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .title {
+      color: #333;
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      font-weight: 700;
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 1.1em;
+      margin-bottom: 30px;
+    }
+
+    .camera-container {
+      position: relative;
+      margin: 30px 0;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    #video {
+      width: 100%;
+      height: 300px;
+      object-fit: cover;
+      background: #f0f0f0;
+    }
+
+    .controls {
+      margin: 20px 0;
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 25px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      color: white;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(45deg, #f093fb, #f5576c);
+      color: white;
+      box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+    }
+
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+    }
+
+    .status {
+      margin: 20px 0;
+      padding: 15px;
+      border-radius: 10px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .status.loading {
+      background: linear-gradient(45deg, #ffecd2, #fcb69f);
+      color: #8b4513;
+      border-left: 4px solid #ff6b35;
+    }
+
+    .status.success {
+      background: linear-gradient(45deg, #d4edda, #c3e6cb);
+      color: #155724;
+      border-left: 4px solid #28a745;
+    }
+
+    .status.error {
+      background: linear-gradient(45deg, #f8d7da, #f5c6cb);
+      color: #721c24;
+      border-left: 4px solid #dc3545;
+    }
+
+    .result-card {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 15px;
+      padding: 25px;
+      margin: 20px 0;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+      border: 2px solid #e9ecef;
+      transition: all 0.3s ease;
+    }
+
+    .result-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+    }
+
+    .result-title {
+      font-size: 1.5em;
+      color: #333;
+      margin-bottom: 15px;
+      font-weight: 700;
+    }
+
+    .result-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 10px 0;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .result-label {
+      font-weight: 600;
+      color: #495057;
+    }
+
+    .result-value {
+      font-family: 'Courier New', monospace;
+      color: #007bff;
+      word-break: break-all;
+      max-width: 60%;
+      text-align: right;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .loading-spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px;
+        margin: 10px;
+      }
+
+      .title {
+        font-size: 2em;
+      }
+
+      .controls {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .btn {
+        width: 200px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1 class="title">QR Wallet Scanner</h1>
+    <p class="subtitle">Scan QR codes to check wallet balance</p>
+
+    <div class="camera-container">
+      <video id="video" autoplay muted></video>
+    </div>
+
+    <div class="controls">
+      <button id="startCamera" class="btn btn-primary">Start Camera</button>
+      <button id="scanQR" class="btn btn-secondary">Scan QR Code</button>
+    </div>
+
+    <div id="status" class="status hidden"></div>
+
+    <div id="result" class="result-card hidden"></div>
+  </div>
+
+  <script>
+    let video = document.getElementById('video');
+    let canvas = document.createElement('canvas');
+    let context = canvas.getContext('2d');
+    let stream = null;
+
+    document.getElementById('startCamera').addEventListener('click', startCamera);
+    document.getElementById('scanQR').addEventListener('click', scanQR);
+
+    async function startCamera() {
+      try {
+        updateStatus('Accessing camera...', 'loading');
+
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+            facingMode: 'environment' // Use back camera on mobile
+          }
+        });
+
+        video.srcObject = stream;
+        updateStatus('Camera ready! Position QR code in view and click "Scan QR Code"', 'success');
+
+        document.getElementById('scanQR').disabled = false;
+      } catch (error) {
+        updateStatus('Error accessing camera: ' + error.message, 'error');
+        console.error('Camera error:', error);
+      }
+    }
+
+    function scanQR() {
+      if (!stream) {
+        updateStatus('Please start camera first', 'error');
+        return;
+      }
+
+      updateStatus('Scanning QR code...', 'loading');
+
+      // Capture frame from video
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0);
+
+      // Convert to base64
+      let imageData = canvas.toDataURL('image/jpeg', 0.8);
+
+      // Send to server for processing
+      fetch('/scan_qr', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ image: imageData })
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            updateStatus('QR code scanned successfully!', 'success');
+            displayResult(data);
+          } else {
+            updateStatus('Error: ' + data.error, 'error');
+          }
+        })
+        .catch(error => {
+          updateStatus('Network error: ' + error.message, 'error');
+          console.error('Scan error:', error);
+        });
+    }
+
+    function updateStatus(message, type) {
+      const statusEl = document.getElementById('status');
+      statusEl.className = `status ${type}`;
+
+      if (type === 'loading') {
+        statusEl.innerHTML = `
+                    <div class="loading-spinner"></div>
+                    ${message}
+                `;
+      } else {
+        statusEl.textContent = message;
+      }
+
+      statusEl.classList.remove('hidden');
+    }
+
+    function displayResult(data) {
+      const resultEl = document.getElementById('result');
+
+      let balanceDisplay = '';
+      if (data.balance_data) {
+        if (typeof data.balance_data === 'object') {
+          balanceDisplay = Object.entries(data.balance_data)
+            .map(([key, value]) => `
+                            <div class="result-item">
+                                <span class="result-label">${key}:</span>
+                                <span class="result-value">${value}</span>
+                            </div>
+                        `).join('');
+        } else {
+          balanceDisplay = `
+                        <div class="result-item">
+                            <span class="result-label">Balance:</span>
+                            <span class="result-value">${data.balance_data}</span>
+                        </div>
+                    `;
+        }
+      }
+
+      resultEl.innerHTML = `
+                <div class="result-title">Wallet Information</div>
+                <div class="result-item">
+                    <span class="result-label">Public Key:</span>
+                    <span class="result-value">${data.public_key}</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">QR Data:</span>
+                    <span class="result-value">${data.qr_data}</span>
+                </div>
+                ${balanceDisplay}
+            `;
+
+      resultEl.classList.remove('hidden');
+    }
+
+    // Initialize camera on page load
+    window.addEventListener('load', () => {
+      // Auto-start camera for better UX
+      startCamera();
+    });
+
+    // Cleanup camera when page unloads
+    window.addEventListener('beforeunload', () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    });
+  </script>
+</body>
+
+</html>

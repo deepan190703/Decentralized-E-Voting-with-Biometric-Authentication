@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Blockchain Voting System{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 50px auto;">
+    <div class="header">
+        <h1>🗳️ Voting System</h1>
+        <p>Secure Blockchain-Based Voting</p>
+    </div>
+    <div class="content">
+        <!-- Traditional Login Form -->
+        <form method="POST" action="{{ url_for('login') }}" id="loginForm">
+            <div class="form-group">
+                <label for="voter_id">Voter ID</label>
+                <input type="text" id="voter_id" name="voter_id" class="form-control" required 
+                       placeholder="Enter your voter ID">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" class="form-control" required 
+                       placeholder="Enter your password">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-bottom: 15px;">
+                🔐 Login to Vote
+            </button>
+        </form>
+
+        <!-- Arduino Status and Fingerprint Login Section -->
+        <div style="text-align: center; margin: 20px 0;">
+            <hr style="margin: 20px 0;">
+            
+            <!-- Arduino Status Display -->
+            <div id="arduinoStatus" class="status-display">
+                <div class="status-indicator">
+                    <span id="statusIcon">📟</span>
+                    <span id="statusText">Checking Arduino...</span>
+                </div>
+                <div id="statusDetails" style="font-size: 0.85em; color: #666; margin-top: 5px;"></div>
+                <button id="reconnectBtn" class="btn btn-warning" style="display: none; margin-top: 10px; font-size: 0.9em;">
+                    🔄 Reconnect Arduino
+                </button>
+            </div>
+            
+            <p style="color: #666; margin: 15px 0;">OR</p>
+            
+            <button id="fingerprintLoginBtn" class="btn btn-secondary" style="width: 100%;" disabled>
+                👆 Login with Fingerprint
+            </button>
+            
+            <div id="fingerprintStatus" style="margin-top: 15px; padding: 10px; border-radius: 5px; display: none;">
+                <p id="statusMessage"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fingerprintBtn = document.getElementById('fingerprintLoginBtn');
+    const statusDiv = document.getElementById('fingerprintStatus');
+    const statusMsg = document.getElementById('statusMessage');
+    const loginForm = document.getElementById('loginForm');
+    const statusIcon = document.getElementById('statusIcon');
+    const statusText = document.getElementById('statusText');
+    const statusDetails = document.getElementById('statusDetails');
+    const reconnectBtn = document.getElementById('reconnectBtn');
+
+    let statusCheckInterval;
+
+    function updateArduinoStatus(data) {
+        if (data.arduino_connected) {
+            statusIcon.textContent = '✅';
+            statusText.textContent = 'Arduino Connected';
+            statusText.style.color = '#28a745';
+            statusDetails.textContent = 'Fingerprint scanner ready';
+            reconnectBtn.style.display = 'none';
+            fingerprintBtn.disabled = false;
+            fingerprintBtn.style.opacity = '1';
+        } else {
+            statusIcon.textContent = '❌';
+            statusText.textContent = 'Arduino Disconnected';
+            statusText.style.color = '#dc3545';
+            statusDetails.textContent = data.error_message || 'Connection failed';
+            reconnectBtn.style.display = 'inline-block';
+            fingerprintBtn.disabled = true;
+            fingerprintBtn.style.opacity = '0.6';
+        }
+    }
+
+    function checkArduinoStatus() {
+        fetch('/check-fingerprint-status')
+        .then(response => response.json())
+        .then(data => {
+            updateArduinoStatus(data);
+        })
+        .catch(error => {
+            console.error('Status check error:', error);
+            statusIcon.textContent = '⚠️';
+            statusText.textContent = 'Status Check Failed';
+            statusText.style.color = '#ffc107';
+            statusDetails.textContent = 'Unable to check Arduino status';
+        });
+    }
+
+    // Reconnect button handler
+    reconnectBtn.addEventListener('click', function() {
+        reconnectBtn.disabled = true;
+        reconnectBtn.textContent = '🔄 Reconnecting...';
+        statusText.textContent = 'Reconnecting Arduino...';
+        statusText.style.color = '#007bff';
+        statusDetails.textContent = 'Please wait...';
+
+        fetch('/reconnect-arduino', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            reconnectBtn.disabled = false;
+            reconnectBtn.textContent = '🔄 Reconnect Arduino';
+            
+            if (data.success) {
+                updateArduinoStatus({arduino_connected: true});
+                setTimeout(() => {
+                    statusDetails.textContent = 'Reconnection successful!';
+                }, 500);
+            } else {
+                updateArduinoStatus({
+                    arduino_connected: false, 
+                    error_message: data.message
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Reconnect error:', error);
+            reconnectBtn.disabled = false;
+            reconnectBtn.textContent = '🔄 Reconnect Arduino';
+            statusText.textContent = 'Reconnection Failed';
+            statusText.style.color = '#dc3545';
+            statusDetails.textContent = 'Please try again';
+        });
+    });
+
+    fingerprintBtn.addEventListener('click', function() {
+        if (fingerprintBtn.disabled) return;
+        
+        // Disable the button and show status
+        fingerprintBtn.disabled = true;
+        fingerprintBtn.textContent = '👆 Scanning...';
+        statusDiv.style.display = 'block';
+        statusDiv.className = 'alert alert-info';
+        statusMsg.textContent = 'Please place your finger on the sensor...';
+
+        // Disable traditional login form
+        const formInputs = loginForm.querySelectorAll('input, button');
+        formInputs.forEach(input => input.disabled = true);
+
+        // Make AJAX request for fingerprint login
+        fetch('/fingerprint-login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                statusDiv.className = 'alert alert-success';
+                statusMsg.textContent = data.message;
+                
+                // Redirect to voting portal
+                setTimeout(() => {
+                    window.location.href = data.redirect_url;
+                }, 1500);
+            } else {
+                statusDiv.className = 'alert alert-danger';
+                statusMsg.textContent = data.message;
+                resetButtons();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            statusDiv.className = 'alert alert-danger';
+            statusMsg.textContent = 'Connection error. Please try again.';
+            resetButtons();
+        });
+    });
+
+    function resetButtons() {
+        // Re-enable all buttons and inputs
+        if (statusIcon.textContent === '✅') {
+            fingerprintBtn.disabled = false;
+            fingerprintBtn.style.opacity = '1';
+        }
+        fingerprintBtn.textContent = '👆 Login with Fingerprint';
+        
+        const formInputs = loginForm.querySelectorAll('input, button');
+        formInputs.forEach(input => input.disabled = false);
+        
+        // Hide status after 5 seconds
+        setTimeout(() => {
+            statusDiv.style.display = 'none';
+        }, 5000);
+    }
+
+    // Initial status check
+    checkArduinoStatus();
+
+    // Check status every 5 seconds
+    statusCheckInterval = setInterval(checkArduinoStatus, 5000);
+
+    // Clean up interval when page unloads
+    window.addEventListener('beforeunload', function() {
+        if (statusCheckInterval) {
+            clearInterval(statusCheckInterval);
+        }
+    });
+});
+</script>
+
+<style>
+.status-display {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-weight: 500;
+}
+
+.alert {
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    border: 1px solid #bee5eb;
+    color: #0c5460;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+}
+
+.btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    transition: all 0.3s;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background-color: #545b62;
+}
+
+.btn-warning {
+    background-color: #ffc107;
+    color: #212529;
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+.btn-warning:hover:not(:disabled) {
+    background-color: #e0a800;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+</style>
+
+{% endblock %}
